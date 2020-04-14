@@ -1,8 +1,12 @@
 
 /* DJcycle HD FPV MSP
     Converts Sensordata data to MSP telemetry data compatible with the DJcycle HD FPV system.
-
-    Arduino Nano TX to DJcycle Air unit RX(115200)
+    based on d3ngit/djihdfpv_mavlink_to_msp_V2
+    
+    HW used: BluePill - STM32
+    
+    Arduino TX to DJI Air unit RX(115200)
+    DJI SW 01.00.05 required
 */
 
 #define debug 1
