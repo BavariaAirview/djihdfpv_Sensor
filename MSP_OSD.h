@@ -133,4 +133,3 @@ struct msp_status_BF_t {
   uint32_t armingDisableFlags;
   uint8_t  rebootRequired;
 } __attribute__ ((packed));
-
