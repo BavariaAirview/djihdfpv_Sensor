@@ -1,5 +1,5 @@
 
-/* DJcycle HD FPV MSP
+/* DJI HD FPV MSP
     Converts Sensordata data to MSP telemetry data compatible with the DJcycle HD FPV system.
     based on d3ngit/djihdfpv_mavlink_to_msp_V2
     
