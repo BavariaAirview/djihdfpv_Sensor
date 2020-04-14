@@ -4,26 +4,32 @@
 //234 -> not visible. Horizontally 2048-2074(spacing 1), vertically 2048-2528(spacing 32). 26 characters X 15 lines
 
 //currently working elements
-const uint16_t osd_rssi_value_pos = 2179;
-const uint16_t osd_avg_cell_voltage_pos = 2072;
-const uint16_t osd_gps_lon_pos = 2113;
-const uint16_t osd_gps_lat_pos = 2081;
+const uint16_t osd_rssi_value_pos = 2104;
+const uint16_t osd_avg_cell_voltage_pos = 2478;
+const uint16_t osd_gps_lon_pos = 2433;
+const uint16_t osd_gps_lat_pos = 2465;
+const uint16_t osd_gps_sats_pos = 2072;
+const uint16_t osd_main_batt_voltage_pos = 234;   // not displayed
+
+// new implemented
+const uint16_t osd_gps_speed_pos = 2327;
+const uint16_t osd_altitude_pos = 2305;
+const uint16_t osd_home_dir_pos = 2094;
+const uint16_t osd_home_dist_pos = 2062;
+
+// not used
+const uint16_t osd_pitch_angle_pos = 234;
+const uint16_t osd_roll_angle_pos = 234;
 const uint16_t osd_flymode_pos = 234;
-const uint16_t osd_craft_name_pos = 2543;
-const uint16_t osd_current_draw_pos = 2102;
-const uint16_t osd_mah_drawn_pos = 2136;
-uint16_t osd_gps_sats_pos = 2465;
-const uint16_t osd_main_batt_voltage_pos = 234;
-const uint16_t osd_pitch_angle_pos = 2488;
-const uint16_t osd_roll_angle_pos = 2456;
+const uint16_t osd_craft_name_pos = 234;
+const uint16_t osd_mah_drawn_pos = 234;
+const uint16_t osd_current_draw_pos = 234;
 const uint16_t osd_crosshairs_pos = 234;
-const uint16_t osd_numerical_vario_pos = 2532;
+const uint16_t osd_numerical_vario_pos = 243;
 
 //not implemented or not available
 const uint16_t osd_throttle_pos_pos = 234;
 const uint16_t osd_vtx_channel_pos = 234;
-const uint16_t osd_gps_speed_pos = 234;
-const uint16_t osd_altitude_pos = 234;
 const uint16_t osd_roll_pids_pos = 234;
 const uint16_t osd_pitch_pids_pos = 234;
 const uint16_t osd_yaw_pids_pos = 234;
@@ -37,8 +43,6 @@ const uint16_t osd_item_timer_1_pos = 234;
 const uint16_t osd_item_timer_2_pos = 234;
 const uint16_t osd_main_batt_usage_pos = 234;
 const uint16_t osd_disarmed_pos = 234;
-const uint16_t osd_home_dir_pos = 234;
-const uint16_t osd_home_dist_pos = 234;
 const uint16_t osd_numerical_heading_pos = 234;
 const uint16_t osd_compass_bar_pos = 234;
 const uint16_t osd_esc_tmp_pos = 234;
