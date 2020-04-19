@@ -9,7 +9,7 @@
     DJI SW 01.00.05 required
 */
 
-// #define debug 1
+//#define debug 1
 #define RSSI_Servo  1
 #define SERIAL_TYPE                                                 1       //0==SoftSerial(Arduino_Nano), 1==HardSerial(Bluepill)
 //#define IMPERIAL_UNITS                                                    //Altitude in feet, distance to home in miles.
@@ -19,12 +19,12 @@
 #include "OSD_positions_config.h"
 #include <TinyGPS++.h>
 
-#define COUNT_Filter 10
+#define COUNT_Filter 15
 
 String craft_name = "no Name";
 
-int8_t offsetBat = 0;
-uint8_t scaleBat = 100;
+int8_t offsetBat = 1000;   //mV
+uint8_t scaleBat = 111;
 
 
 #ifdef RSSI_Servo
@@ -36,7 +36,7 @@ static const uint32_t GPSBaud = 9600;
 TinyGPSPlus gps;
 
 #define Vbat_in   PA0    // V_Bat input  A0
-#define Battery_scaler 250
+#define Battery_scaler 330
 #define Resoulition 4096
 
 #if SERIAL_TYPE == 0
@@ -213,7 +213,7 @@ void _debug()
   Serial.print("HDG      ");
   Serial.println (heading);
   Serial.print("SPEED    ");
-  Serial.println (groundspeed/100);
+  Serial.println (groundspeed / 100);
   Serial.print("RSSI     ");
   Serial.println (rssi);
   Serial.println("");
@@ -221,7 +221,7 @@ void _debug()
 
 void GPS_recieve()
 {
-  smartDelay(300);
+  smartDelay(150);
 
   numSat = gps.satellites.value();
   gps_lat = gps.location.lat() * 10000000;
@@ -229,7 +229,7 @@ void GPS_recieve()
   gps_alt = gps.altitude.meters();
   fix_age = gps.location.age();
   heading = gps.course.deg();
-  groundspeed = gps.speed.kmph()*100;
+  groundspeed = gps.speed.kmph() * 100;
 
   if (fix_age != 0 && fix_age < 2000 && numSat >= 6) {
     fix_type = 3;
@@ -274,9 +274,10 @@ void VoltageBat()
   }
 
   vbat = lowpass_filter / COUNT_Filter;
-  debugBat = vbat;
   lowpass_filter = 0;
-  vbat = (vbat / 100 * scaleBat) + offsetBat;
+  debugBat = vbat;
+  vbat = (vbat * scaleBat / 100) + (offsetBat / 100);
+
 }
 
 void set_battery_cells_number()
