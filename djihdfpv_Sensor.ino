@@ -2,18 +2,16 @@
 /* DJI HD FPV MSP
     Converts Sensordata data to MSP telemetry data compatible with the DJcycle HD FPV system.
     based on d3ngit/djihdfpv_mavlink_to_msp_V2
-    
+
     HW used: BluePill - STM32
-    
+
     Arduino TX to DJI Air unit RX(115200)
     DJI SW 01.00.05 required
 */
 
-#define debug 1
+// #define debug 1
 #define RSSI_Servo  1
-#define SERIAL_TYPE                                                 1       //0==SoftSerial(Arduino_Nano), 1==HardSerial(others)
-#define SPEED_IN_KILOMETERS_PER_HOUR                                        //if commented out defaults to m/s
-//#define SPEED_IN_MILES_PER_HOUR
+#define SERIAL_TYPE                                                 1       //0==SoftSerial(Arduino_Nano), 1==HardSerial(Bluepill)
 //#define IMPERIAL_UNITS                                                    //Altitude in feet, distance to home in miles.
 #define STORE_GPS_LOCATION_IN_SUBTITLE_FILE                                 //comment out to disable. Stores GPS location in the goggles .srt file in place of the "uavBat:" field at a slow rate of ~2-3s per GPS coordinate
 #include <MSP.h>
@@ -21,6 +19,7 @@
 #include "OSD_positions_config.h"
 #include <TinyGPS++.h>
 
+#define COUNT_Filter 10
 
 String craft_name = "no Name";
 
@@ -42,13 +41,12 @@ TinyGPSPlus gps;
 
 #if SERIAL_TYPE == 0
 #include <AltSoftSerial.h>
-HardwareSerial &mspSerial = Serial2;
-AltSoftSerial GPSSerial;              // RX pin 8, TX pin 9
+HardwareSerial &mspSerial = Serial;
+AltSoftSerial ss;
 #elif SERIAL_TYPE == 1
-HardwareSerial &mspSerial = Serial2;
-HardwareSerial &ss = Serial1;
+HardwareSerial &mspSerial = Serial3;
+HardwareSerial &ss = Serial2;
 #endif
-
 MSP msp;
 
 uint8_t flightModeFlags = 0;
@@ -58,8 +56,8 @@ String cnameStr = "";
 uint16_t batteryCapacity = 1800;
 uint8_t vbat = 0;
 float groundspeed = 0;
-int32_t relative_alt = 0;       // in milimeters
-uint32_t altitude_msp = 0;      // EstimatedAltitudeCm
+float relative_alt = 0;       // in milimeters
+int32_t altitude_msp = 0;      // EstimatedAltitudeCm
 uint16_t rssi = 0;
 char craftname[15] = "";
 float f_mAhDrawn = 0.0;
@@ -69,10 +67,10 @@ uint8_t pid_pitch[3];
 uint8_t pid_yaw[3];
 int32_t gps_lon = 0;
 int32_t gps_lat = 0;
-int32_t gps_alt = 0;
+float gps_alt = 0;
 int32_t gps_home_lon = 0;
 int32_t gps_home_lat = 0;
-int32_t gps_home_alt = 0;
+float gps_home_alt = 0;
 uint16_t fix_age = 0;
 int16_t roll_angle = 0;
 int16_t pitch_angle = 0;
@@ -89,7 +87,8 @@ float Vbat_lowpass[20];
 char gps_time[32];
 uint16_t fail_timer = 1000;
 uint8_t i = 1;
-int lowpass_filter = 0;
+uint16_t lowpass_filter = 0;
+uint16_t debugBat = 0;
 
 uint8_t set_home = 1;
 uint32_t general_counter = 0;
@@ -141,7 +140,6 @@ void setup()
 #ifdef RSSI_Servo
   attachInterrupt(CHANNEL_1_PIN, calcSignal, CHANGE);
 #endif
-  Vbat_lowpass[20] = 0;
 }
 
 void loop()
@@ -165,8 +163,8 @@ void loop()
     general_counter += next_interval_MSP;
   }
 
-  
-  if (batteryCellCount == 0 && vbat > 10 && Vbat_lowpass[20] != 0)set_battery_cells_number();
+
+  if (batteryCellCount == 0 && vbat > 10 && millis() > 5000)set_battery_cells_number();
 
   //set GPS home when 3D fix
   if (fix_type > 2 && set_home == 1 && gps_lat != 0 && gps_lon != 0 && numSat >= 6) {
@@ -188,10 +186,14 @@ void get_Servo() {
 
 void _debug()
 {
+  Serial.print("Cycle    ");
+  Serial.println (i);
   Serial.print("Fix age  ");
   Serial.println (fix_age);
   Serial.print("Vbat:    ");
   Serial.println (vbat);
+  Serial.print("batIN:    ");
+  Serial.println (debugBat);
   Serial.print("Num Cell:");
   Serial.println (batteryCellCount);
   Serial.print("Sat Fix  ");
@@ -211,7 +213,7 @@ void _debug()
   Serial.print("HDG      ");
   Serial.println (heading);
   Serial.print("SPEED    ");
-  Serial.println (groundspeed);
+  Serial.println (groundspeed/100);
   Serial.print("RSSI     ");
   Serial.println (rssi);
   Serial.println("");
@@ -227,16 +229,16 @@ void GPS_recieve()
   gps_alt = gps.altitude.meters();
   fix_age = gps.location.age();
   heading = gps.course.deg();
-  groundspeed = gps.speed.kmph();
+  groundspeed = gps.speed.kmph()*100;
 
   if (fix_age != 0 && fix_age < 2000 && numSat >= 6) {
     fix_type = 3;
   }
   if (set_home == 0) {
     relative_alt = gps_alt - gps_home_alt;
-    altitude_msp = relative_alt * 1000;
+    altitude_msp = relative_alt * 100;
   } else {
-    altitude_msp = gps_alt * 1000;
+    altitude_msp = gps_alt * 100;
   }
   if ( fix_type == 3 && flightModeFlags == 1) {
     flightModeFlags = 2;
@@ -263,13 +265,16 @@ void VoltageBat()
   Vbat = analogRead(Vbat_in);
   Vbat = Vbat / Resoulition * 100;
   Vbat = Vbat * Battery_scaler / 100;
+  //Serial.println(Vbat);
   Vbat_lowpass[i] = Vbat;
   i++;
-  if (i > 20) i = 1;
-  for (int j = 1; j >= 20; j++) {
+  if (i > COUNT_Filter) i = 1;
+  for (int j = 1; j <= COUNT_Filter; j++) {
     lowpass_filter = lowpass_filter + Vbat_lowpass[j];
   }
-  vbat = lowpass_filter / 20;
+
+  vbat = lowpass_filter / COUNT_Filter;
+  debugBat = vbat;
   lowpass_filter = 0;
   vbat = (vbat / 100 * scaleBat) + offsetBat;
 }
