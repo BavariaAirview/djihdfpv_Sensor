@@ -1,4 +1,3 @@
-
 /* DJI HD FPV MSP
     Converts Sensordata data to MSP telemetry data compatible with the DJcycle HD FPV system.
     based on d3ngit/djihdfpv_mavlink_to_msp_V2
@@ -10,7 +9,8 @@
 */
 
 //#define debug 1
-#define RSSI_Servo  1
+//#define RSSI_Servo  1
+#define RSSI_Sbus 1
 #define SERIAL_TYPE                                                 1       //0==SoftSerial(Arduino_Nano), 1==HardSerial(Bluepill)
 //#define IMPERIAL_UNITS                                                    //Altitude in feet, distance to home in miles.
 #define STORE_GPS_LOCATION_IN_SUBTITLE_FILE                                 //comment out to disable. Stores GPS location in the goggles .srt file in place of the "uavBat:" field at a slow rate of ~2-3s per GPS coordinate
@@ -18,6 +18,12 @@
 #include "MSP_OSD.h"
 #include "OSD_positions_config.h"
 #include <TinyGPS++.h>
+
+#ifdef RSSI_Sbus
+#include "sbus.h"
+#define RSSI_CH 12
+SBUS sbus(Serial1);
+#endif
 
 #define COUNT_Filter 15
 
@@ -99,7 +105,7 @@ volatile unsigned long timer_start;
 volatile int last_interrupt_time; //calcSignal is the interrupt handler
 int pulse_time = 0;
 
-
+#ifdef RSSI_Servo
 void calcSignal()
 {
   //record the interrupt time so that we can tell if the receiver has a signal from the transmitter
@@ -125,9 +131,14 @@ void calcSignal()
     if (pulse_time < 960) pulse_time = 960;
   }
 }
+#endif
 
 void setup()
 {
+#ifdef RSSI_Sbus
+  sbus.begin();
+  setupTimer2();
+#endif
 #ifdef debug
   Serial.begin(115200);
 #endif
@@ -148,6 +159,10 @@ void loop()
   _debug();
 #endif
   VoltageBat();
+
+#ifdef RSSI_Sbus
+  rssi = map(sbus._channels[RSSI_CH], 172, 1811, 1023, 0);
+#endif
 
 #ifdef RSSI_Servo
   get_Servo();
@@ -288,6 +303,19 @@ void set_battery_cells_number()
   else if (vbat < 255)batteryCellCount = 6;
 }
 
+void setupTimer2()
+{
+  Timer2.setMode(TIMER_CH1, TIMER_OUTPUTCOMPARE);
+  Timer2.setPeriod(249);
+  Timer2.setCompare(TIMER_CH1, 1);
+  Timer2.attachInterrupt(TIMER_CH1, sbusProcess);
+}
+#ifdef RSSI_Sbus
+void sbusProcess()
+{
+  sbus.process();
+}
+#endif
 void save_text(char (*text)[15])
 {
   memcpy(craftname, *text, sizeof(craftname));
