@@ -1,4 +1,3 @@
-
 /* DJI HD FPV MSP
     Converts Sensordata data to MSP telemetry data compatible with the DJcycle HD FPV system.
     based on d3ngit/djihdfpv_mavlink_to_msp_V2
@@ -9,7 +8,7 @@
     DJI SW 01.00.05 required
 */
 
-//#define debug 1
+#define debug 1
 //#define RSSI_Servo  1
 #define RSSI_SBUS 1
 #define SERIAL_TYPE                                                 1       //0==SoftSerial(Arduino_Nano), 1==HardSerial(Bluepill)
@@ -162,7 +161,7 @@ void loop()
   VoltageBat();
 
 #ifdef RSSI_SBUS
-rssi = map(sbus._channels[RSSI_CH], 172, 1811, 950, 2000);
+  rssi = map(sbus._channels[RSSI_CH], 172, 1811, 950, 2000);
 #endif
 
 #ifdef RSSI_Servo
