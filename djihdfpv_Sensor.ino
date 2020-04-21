@@ -10,7 +10,8 @@
 */
 
 //#define debug 1
-#define RSSI_Servo  1
+//#define RSSI_Servo  1
+#define RSSI_SBUS 1
 #define SERIAL_TYPE                                                 1       //0==SoftSerial(Arduino_Nano), 1==HardSerial(Bluepill)
 //#define IMPERIAL_UNITS                                                    //Altitude in feet, distance to home in miles.
 #define STORE_GPS_LOCATION_IN_SUBTITLE_FILE                                 //comment out to disable. Stores GPS location in the goggles .srt file in place of the "uavBat:" field at a slow rate of ~2-3s per GPS coordinate
@@ -30,6 +31,12 @@ uint8_t scaleBat = 111;
 #ifdef RSSI_Servo
 #include <Servo.h>
 #define CHANNEL_1_PIN PB12    // B12
+#endif
+
+#ifdef RSSI_SBUS
+#include <SBUS_STM.h>
+SBUS sbus(Serial1);         // B
+#define RSSI_CH   12
 #endif
 
 static const uint32_t GPSBaud = 9600;
@@ -99,7 +106,7 @@ volatile unsigned long timer_start;
 volatile int last_interrupt_time; //calcSignal is the interrupt handler
 int pulse_time = 0;
 
-
+#ifdef RSSI_Servo
 void calcSignal()
 {
   //record the interrupt time so that we can tell if the receiver has a signal from the transmitter
@@ -125,6 +132,7 @@ void calcSignal()
     if (pulse_time < 960) pulse_time = 960;
   }
 }
+#endif
 
 void setup()
 {
@@ -140,6 +148,10 @@ void setup()
 #ifdef RSSI_Servo
   attachInterrupt(CHANNEL_1_PIN, calcSignal, CHANGE);
 #endif
+#ifdef RSSI_SBUS
+  sbus.begin();
+  setupTimer2();
+#endif
 }
 
 void loop()
@@ -148,6 +160,10 @@ void loop()
   _debug();
 #endif
   VoltageBat();
+
+#ifdef RSSI_SBUS
+rssi = map(sbus._channels[RSSI_CH], 172, 1811, 950, 2000);
+#endif
 
 #ifdef RSSI_Servo
   get_Servo();
@@ -176,6 +192,7 @@ void loop()
   }
 }
 
+#ifdef RSSI_Servo
 void get_Servo() {
   rssi = map(pulse_time, 980, 2000, 10, 1050);
   if (rssi > 1050) rssi = 1050;
@@ -183,6 +200,22 @@ void get_Servo() {
     rssi = 0;
   }
 }
+#endif
+
+#ifdef RSSI_SBUS
+void setupTimer2()
+{
+  Timer2.setMode(TIMER_CH1, TIMER_OUTPUTCOMPARE);
+  Timer2.setPeriod(249);
+  Timer2.setCompare(TIMER_CH1, 1);
+  Timer2.attachInterrupt(TIMER_CH1, sbusProcess);
+}
+
+void sbusProcess()
+{
+  sbus.process();
+}
+#endif
 
 void _debug()
 {
