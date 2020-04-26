@@ -240,9 +240,9 @@ void _debug()
   Serial.print("Num Sat  ");
   Serial.println (numSat);
   Serial.print("lat      ");
-  Serial.println (gps_lat);
+  Serial.println (gps_lat,6);
   Serial.print("lon      ");
-  Serial.println (gps_lon);
+  Serial.println (gps_lon,6);
   Serial.print("Alt_rel  ");
   Serial.println (relative_alt);
   Serial.print("GPS alt  ");
@@ -263,8 +263,8 @@ void GPS_recieve()
   smartDelay(150);
 
   numSat = gps.satellites.value();
-  gps_lat = gps.location.lat() * 10000000;
-  gps_lon = gps.location.lng() * 10000000;
+  gps_lat = gps.location.lat();
+  gps_lon = gps.location.lng();
   gps_alt = gps.altitude.meters();
   fix_age = gps.location.age();
   heading = gps.course.deg();
@@ -389,8 +389,8 @@ void send_msp_to_airunit()
   msp.send(MSP_BATTERY_STATE, &battery_state, sizeof(battery_state));
 
   //MSP_RAW_GPS
-  raw_gps.lat = gps_lat;
-  raw_gps.lon = gps_lon;
+  raw_gps.lat = gps_lat * 10000000;
+  raw_gps.lon = gps_lon * 10000000;
   raw_gps.numSat = numSat;
   raw_gps.alt = (int16_t)altitude_msp;
   raw_gps.groundSpeed = (int16_t)groundspeed / 3.6;
@@ -523,15 +523,15 @@ void DistToHome() {
       gps_home_lon);
 }
 /*
-//from here on code from Betaflight github https://github.com/betaflight/betaflight/blob/c8b5edb415c33916c91a7ccc8bd19c7276540cd1/src/main/io/gps.c
+  //from here on code from Betaflight github https://github.com/betaflight/betaflight/blob/c8b5edb415c33916c91a7ccc8bd19c7276540cd1/src/main/io/gps.c
 
-float GPS_scaleLonDown = 1.0f;  // this is used to offset the shrinking longitude as we go towards the poles
+  float GPS_scaleLonDown = 1.0f;  // this is used to offset the shrinking longitude as we go towards the poles
 
-void GPS_calc_longitude_scaling(int32_t lat)
-{
+  void GPS_calc_longitude_scaling(int32_t lat)
+  {
   float rads = (fabsf((float)lat) / 10000000.0f) * 0.0174532925f;
   GPS_scaleLonDown = cos_approx(rads);
-}
+  }
 
 
   #define DISTANCE_BETWEEN_TWO_LONGITUDE_POINTS_AT_EQUATOR_IN_HUNDREDS_OF_KILOMETERS 1.113195f
@@ -585,4 +585,4 @@ void GPS_calc_longitude_scaling(int32_t lat)
   {
   return sin_approx(x + (0.5f * M_PIf));
   }
-  */
+*/
