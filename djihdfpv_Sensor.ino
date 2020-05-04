@@ -71,11 +71,11 @@ uint8_t numSat = 0;
 uint8_t pid_roll[3];
 uint8_t pid_pitch[3];
 uint8_t pid_yaw[3];
-int32_t gps_lon = 0;
-int32_t gps_lat = 0;
+float gps_lon = 0;
+float gps_lat = 0;
 float gps_alt = 0;
-int32_t gps_home_lon = 0;
-int32_t gps_home_lat = 0;
+float gps_home_lon = 0;
+float gps_home_lat = 0;
 float gps_home_alt = 0;
 uint16_t fix_age = 0;
 int16_t roll_angle = 0;
@@ -200,7 +200,7 @@ void loop()
 
 #ifdef RSSI_Servo
 void get_Servo() {
-  rssi = map(pulse_time, 980, 2000, 10, 1050);
+  rssi = map(pulse_time, 980, 2000, 10, 1000);
   if (rssi > 1050) rssi = 1050;
   if (fail_timer < millis() - 1000) {
     rssi = 0;
@@ -246,9 +246,9 @@ void _debug()
   Serial.print("Alt_rel  ");
   Serial.println (relative_alt);
   Serial.print("GPS alt  ");
-  Serial.println (gps_alt);
+  Serial.println (gps_alt,1);
   Serial.print("Home alt ");
-  Serial.println (gps_home_alt);
+  Serial.println (gps_home_alt,1);
   Serial.print("HDG      ");
   Serial.println (heading);
   Serial.print("SPEED    ");
