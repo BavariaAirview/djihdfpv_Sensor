@@ -9,8 +9,8 @@
 */
 
 #define debug 1
-//#define RSSI_Servo  1
-#define RSSI_SBUS 1
+#define RSSI_Servo  1
+//#define RSSI_SBUS 1
 #define SERIAL_TYPE                                                 1       //0==SoftSerial(Arduino_Nano), 1==HardSerial(Bluepill)
 //#define IMPERIAL_UNITS                                                    //Altitude in feet, distance to home in miles.
 #define STORE_GPS_LOCATION_IN_SUBTITLE_FILE                                 //comment out to disable. Stores GPS location in the goggles .srt file in place of the "uavBat:" field at a slow rate of ~2-3s per GPS coordinate
@@ -200,7 +200,7 @@ void loop()
 
 #ifdef RSSI_Servo
 void get_Servo() {
-  rssi = map(pulse_time, 980, 2000, 10, 1000);
+  rssi = map(pulse_time, 980, 2000, 10, 1050);
   if (rssi > 1050) rssi = 1050;
   if (fail_timer < millis() - 1000) {
     rssi = 0;
