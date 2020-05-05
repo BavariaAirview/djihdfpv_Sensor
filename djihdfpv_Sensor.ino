@@ -8,7 +8,7 @@
     DJI SW 01.00.05 required
 */
 
-#define debug 1
+//#define debug 1
 #define RSSI_Servo  1
 //#define RSSI_SBUS 1
 #define SERIAL_TYPE                                                 1       //0==SoftSerial(Arduino_Nano), 1==HardSerial(Bluepill)
@@ -153,8 +153,8 @@ void setup()
 #endif
 }
 
-void loop()
-{
+void loop(){
+  
 #ifdef debug
   _debug();
 #endif
@@ -199,7 +199,7 @@ void loop()
 }
 
 #ifdef RSSI_Servo
-void get_Servo() {
+void get_Servo(){
   rssi = map(pulse_time, 980, 2000, 10, 1050);
   if (rssi > 1050) rssi = 1050;
   if (fail_timer < millis() - 1000) {
@@ -223,6 +223,7 @@ void sbusProcess()
 }
 #endif
 
+#ifdef debug
 void _debug()
 {
   Serial.print("Cycle    ");
@@ -257,6 +258,7 @@ void _debug()
   Serial.println (rssi);
   Serial.println("");
 }
+#endif
 
 void GPS_recieve()
 {
