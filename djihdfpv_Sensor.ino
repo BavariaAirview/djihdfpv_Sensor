@@ -34,7 +34,7 @@ uint8_t scaleBat = 111;
 
 #ifdef RSSI_SBUS
 #include <SBUS_STM.h>
-SBUS sbus(Serial1);         // B
+SBUS sbus(Serial1);
 #define RSSI_CH   12
 #endif
 
@@ -101,11 +101,14 @@ uint32_t general_counter = 0;
 uint8_t srtCounter = 1;
 float climb_rate = 0.0;
 
+
+#ifdef RSSI_Servo
+
 volatile unsigned long timer_start;
 volatile int last_interrupt_time; //calcSignal is the interrupt handler
 int pulse_time = 0;
 
-#ifdef RSSI_Servo
+
 void calcSignal()
 {
   //record the interrupt time so that we can tell if the receiver has a signal from the transmitter
@@ -133,6 +136,7 @@ void calcSignal()
 }
 #endif
 
+
 void setup()
 {
 #ifdef debug
@@ -153,8 +157,8 @@ void setup()
 #endif
 }
 
-void loop(){
-  
+void loop() {
+
 #ifdef debug
   _debug();
 #endif
@@ -192,7 +196,7 @@ void loop(){
 }
 
 #ifdef RSSI_Servo
-void get_Servo(){
+void get_Servo() {
   rssi = map(pulse_time, 980, 2000, 10, 1050);
   if (rssi > 1050) rssi = 1050;
   if (fail_timer < millis() - 1000) {
@@ -234,15 +238,15 @@ void _debug()
   Serial.print("Num Sat  ");
   Serial.println (numSat);
   Serial.print("lat      ");
-  Serial.println (gps_lat/  10000000);
+  Serial.println (gps_lat / 10000000, 6);
   Serial.print("lon      ");
-  Serial.println (gps_lon/  10000000);
+  Serial.println (gps_lon / 10000000, 6);
   Serial.print("Alt_rel  ");
-  Serial.println (relative_alt);
+  Serial.println (relative_alt/100,1);
   Serial.print("GPS alt  ");
-  Serial.println (gps_alt,1);
+  Serial.println (gps_alt/100,1);
   Serial.print("Home alt ");
-  Serial.println (gps_home_alt,1);
+  Serial.println (gps_home_alt/100,1);
   Serial.print("HDG      ");
   Serial.println (heading);
   Serial.print("SPEED    ");
@@ -275,12 +279,13 @@ void GPS_recieve()
     altitude_msp = gps_alt;
   }
   if ( fix_type == 3 && flightModeFlags == 1) {
+    delay(100);
     flightModeFlags = 2;
   }
   if ( fix_type == 3 && flightModeFlags == 0) {
     flightModeFlags = 1;
-    //     <entry value="0x00000001" name="AQ_NAV_STATUS_STANDBY">
-    //     <entry value="0x00000002" name="AQ_NAV_STATUS_MANUAL">
+    //     <entry value="0x00000001" name="AQ_NAV_STATUS_STANDBY">  Armed -not flying
+    //     <entry value="0x00000002" name="AQ_NAV_STATUS_MANUAL"> Flying manual
   }
 
 }
@@ -394,8 +399,8 @@ void send_msp_to_airunit()
 
   //MSP_COMP_GPS
   uint16_t directionToHomeNorm = 360 + (directionToHome - heading);
-    if(directionToHomeNorm < 0)directionToHomeNorm += 360;
-    if(directionToHomeNorm > 360)directionToHomeNorm -= 360;
+  if (directionToHomeNorm < 0)directionToHomeNorm += 360;
+  if (directionToHomeNorm > 360)directionToHomeNorm -= 360;
   comp_gps.distanceToHome = (int16_t)distanceToHome;
   comp_gps.directionToHome = directionToHomeNorm;
 
@@ -510,8 +515,8 @@ float GPS_scaleLonDown = 1.0f;  // this is used to offset the shrinking longitud
 
 void GPS_calc_longitude_scaling(int32_t lat)
 {
-    float rads = (fabsf((float)lat) / 10000000.0f) * 0.0174532925f;
-    GPS_scaleLonDown = cos_approx(rads);
+  float rads = (fabsf((float)lat) / 10000000.0f) * 0.0174532925f;
+  GPS_scaleLonDown = cos_approx(rads);
 }
 
 #define DISTANCE_BETWEEN_TWO_LONGITUDE_POINTS_AT_EQUATOR_IN_HUNDREDS_OF_KILOMETERS 1.113195f
@@ -520,27 +525,27 @@ void GPS_calc_longitude_scaling(int32_t lat)
 // Get bearing from pos1 to pos2, returns an 1deg = 100 precision
 void GPS_distance_cm_bearing(int32_t *currentLat1, int32_t *currentLon1, int32_t *destinationLat2, int32_t *destinationLon2, uint32_t *dist, int32_t *bearing)
 {
-    float dLat = *destinationLat2 - *currentLat1; // difference of latitude in 1/10 000 000 degrees
-    float dLon = (float)(*destinationLon2 - *currentLon1) * GPS_scaleLonDown;
-    *dist = sqrtf(sq(dLat) + sq(dLon)) * DISTANCE_BETWEEN_TWO_LONGITUDE_POINTS_AT_EQUATOR_IN_HUNDREDS_OF_KILOMETERS;
+  float dLat = *destinationLat2 - *currentLat1; // difference of latitude in 1/10 000 000 degrees
+  float dLon = (float)(*destinationLon2 - *currentLon1) * GPS_scaleLonDown;
+  *dist = sqrtf(sq(dLat) + sq(dLon)) * DISTANCE_BETWEEN_TWO_LONGITUDE_POINTS_AT_EQUATOR_IN_HUNDREDS_OF_KILOMETERS;
 
-    *bearing = 9000.0f + atan2f(-dLat, dLon) * TAN_89_99_DEGREES;      // Convert the output radians to 100xdeg
-    if (*bearing < 0)
-        *bearing += 36000;
+  *bearing = 9000.0f + atan2f(-dLat, dLon) * TAN_89_99_DEGREES;      // Convert the output radians to 100xdeg
+  if (*bearing < 0)
+    *bearing += 36000;
 }
 
 void GPS_calculateDistanceAndDirectionToHome(void)
 {
-     if (gps_home_lat != 0 && gps_home_lon != 0) {      // If we don't have home set, do not display anything
-        uint32_t dist;
-        int32_t dir;
-        GPS_distance_cm_bearing(&gps_lat, &gps_lon, &gps_home_lat, &gps_home_lon, &dist, &dir);
-        distanceToHome = dist / 100;
-        directionToHome = dir / 100;
-     } else {
-         distanceToHome = 0;
-         directionToHome = 0;
-     }
+  if (gps_home_lat != 0 && gps_home_lon != 0) {      // If we don't have home set, do not display anything
+    uint32_t dist;
+    int32_t dir;
+    GPS_distance_cm_bearing(&gps_lat, &gps_lon, &gps_home_lat, &gps_home_lon, &dist, &dir);
+    distanceToHome = dist / 100;
+    directionToHome = dir / 100;
+  } else {
+    distanceToHome = 0;
+    directionToHome = 0;
+  }
 }
 
 #define M_PIf       3.14159265358979323846f
@@ -551,21 +556,21 @@ void GPS_calculateDistanceAndDirectionToHome(void)
 
 float sin_approx(float x)
 {
-    int32_t xint = x;
-    if (xint < -32 || xint > 32) return 0.0f;                               // Stop here on error input (5 * 360 Deg)
-    while (x >  M_PIf) x -= (2.0f * M_PIf);                                 // always wrap input angle to -PI..PI
-    while (x < -M_PIf) x += (2.0f * M_PIf);
-    if (x >  (0.5f * M_PIf)) {
-      x =  (0.5f * M_PIf) - ( x - (0.5f * M_PIf));   // We just pick -90..+90 Degree
-    }
-    else if (x < -(0.5f * M_PIf)){
-      x = -(0.5f * M_PIf) - ((0.5f * M_PIf) + x);
-    }
-    float x2 = x * x;
-    return x + x * x2 * (sinPolyCoef3 + x2 * (sinPolyCoef5 + x2 * (sinPolyCoef7 + x2 * sinPolyCoef9)));
+  int32_t xint = x;
+  if (xint < -32 || xint > 32) return 0.0f;                               // Stop here on error input (5 * 360 Deg)
+  while (x >  M_PIf) x -= (2.0f * M_PIf);                                 // always wrap input angle to -PI..PI
+  while (x < -M_PIf) x += (2.0f * M_PIf);
+  if (x >  (0.5f * M_PIf)) {
+    x =  (0.5f * M_PIf) - ( x - (0.5f * M_PIf));   // We just pick -90..+90 Degree
+  }
+  else if (x < -(0.5f * M_PIf)) {
+    x = -(0.5f * M_PIf) - ((0.5f * M_PIf) + x);
+  }
+  float x2 = x * x;
+  return x + x * x2 * (sinPolyCoef3 + x2 * (sinPolyCoef5 + x2 * (sinPolyCoef7 + x2 * sinPolyCoef9)));
 }
 
 float cos_approx(float x)
 {
-    return sin_approx(x + (0.5f * M_PIf));
+  return sin_approx(x + (0.5f * M_PIf));
 }
